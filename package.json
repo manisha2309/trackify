@@ -1,0 +1,21 @@
+{
+  "name": "nexpath-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:career\" \"npm run dev:leetcode\" \"npm run dev:college\" \"npm run dev:roadmap\" \"npm run dev:frontend\"",
+    "dev:gateway": "cd services/api-gateway && npm run dev",
+    "dev:auth": "cd services/auth-service && npm run dev",
+    "dev:career": "cd services/career-service && npm run dev",
+    "dev:leetcode": "cd services/leetcode-service && npm run dev",
+    "dev:college": "cd services/college-service && npm run dev",
+    "dev:roadmap": "cd services/roadmap-service && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "docker:up": "docker-compose up --build",
+    "docker:down": "docker-compose down",
+    "install:all": "npm install && cd services/api-gateway && npm install && cd ../auth-service && npm install && cd ../career-service && npm install && cd ../leetcode-service && npm install && cd ../college-service && npm install && cd ../roadmap-service && npm install && cd ../notification-service && npm install && cd ../../frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

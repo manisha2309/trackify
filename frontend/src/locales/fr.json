@@ -1,0 +1,8 @@
+{
+  "features": {
+    "careerQuiz": "Quiz de carrière",
+    "leetcodeTracker": "Suivi LeetCode",
+    "aiRoadmap": "Feuille de route IA",
+    "careerTree": "Arbre de carrière 3D"
+  }
+}

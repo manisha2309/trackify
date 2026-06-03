@@ -1,0 +1,39 @@
+{
+  "navbar": {
+    "logo": "Trackify",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "careerQuiz": "Career Quiz",
+    "leetcodeTracker": "LeetCode Tracker",
+    "aiRoadmap": "AI Roadmap",
+    "careerTree": "3D Career Tree"
+  },
+  "home": {
+    "welcome": "Discover Your",
+    "careerDNA": "Career DNA",
+    "trackEverything": "Track Everything",
+    "description": "AI-driven career guidance meets real-time LeetCode progress tracking. Personalized roadmaps, college matching & 3D visualization — built for India’s next generation.",
+    "startQuiz": "⚡ Start Free Quiz",
+    "exploreColleges": "Explore Colleges",
+    "stats": {
+      "studentsGuided": "Students Guided",
+      "careerPaths": "Career Paths",
+      "collegesListed": "Colleges Listed",
+      "matchAccuracy": "Match Accuracy"
+    },
+    "features": {
+      "leetcodeAutoSync": "LeetCode Auto-Sync",
+      "aiCareerQuiz": "AI Career Quiz",
+      "careerTree3D": "3D Career Tree",
+      "collegeFinder": "College Finder",
+      "aiRoadmap": "AI Roadmap",
+      "multiLanguage": "Multi-Language"
+    },
+    "cta": {
+      "ready": "Ready to find your",
+      "path": "path?",
+      "ctaDesc": "Take the free AI quiz and get your personalized career roadmap in 2 minutes.",
+      "getStarted": "Get Started Free →"
+    }
+  }
+}
