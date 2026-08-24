@@ -1,5 +1,4 @@
 const router = require('express').Router();
-const axios  = require('axios');
 const { GoogleGenAI } = require('@google/genai');
 
 // Static quiz questions
@@ -58,6 +57,17 @@ const CAREER_MAP = {
   "Research Scientist":        [2,0,2,3,2,0,3,0],
 };
 
+const DEFAULT_INSIGHTS = {
+  "Software Developer": "High demand in product companies and tech hubs across India (Bengaluru, Hyderabad, Pune). Focus on Data Structures, Algorithms (LeetCode), and building full-stack web applications.",
+  "UI/UX Designer": "Growing demand as Indian consumer tech and global design agencies expand. Focus on mastering Figma, building a case study portfolio, and understanding usability heuristics.",
+  "Data Scientist": "Tremendous opportunity across fintech, e-commerce, and analytics firms. Focus on Python, statistics, SQL, and practical machine learning projects on Kaggle.",
+  "Product Manager": "Excellent pathway for cross-functional thinkers in high-growth startups. Focus on product sense, wireframing, metrics analysis (SQL/Mixpanel), and leadership.",
+  "Doctor / Medical": "Noble and resilient career path in healthcare. Focus on NEET prep, medical sciences, and clinical research.",
+  "Business Analyst": "Crucial role bridging business stakeholders and tech teams. Focus on Excel modeling, SQL, PowerBI/Tableau, and business communication.",
+  "Graphic Designer": "Creative career in branding, marketing, and media agencies. Master Adobe Illustrator/Photoshop, visual identity design, and motion graphics.",
+  "Research Scientist": "Specialized path in cutting-edge R&D laboratories and academia. Focus on publications, GATE/CSIR-NET, and advanced domain research."
+};
+
 // GET /quiz/questions
 router.get('/questions', (_, res) => res.json({ questions: QUESTIONS, total: QUESTIONS.length }));
 
@@ -71,7 +81,6 @@ router.post('/submit', async (req, res) => {
     const scores = {};
     for (const [career, weights] of Object.entries(CAREER_MAP)) {
       scores[career] = answers.reduce((sum, ans, i) => {
-        // Simple scoring: if chosen option index aligns with weight index
         return sum + (ans === Math.round(weights[i] / 3 * 3) ? weights[i] : 0);
       }, 0);
     }
@@ -81,21 +90,25 @@ router.post('/submit', async (req, res) => {
     const maxScore  = sorted[0][1];
     const matchPct  = Math.min(95, Math.round((maxScore / 9) * 100));
 
-    // Use Gemini API to enrich the result
-    let aiInsight = '';
-    if (process.env.GEMINI_API_KEY) {
+    // Use Gemini API if available, else curated insight
+    let aiInsight = DEFAULT_INSIGHTS[topCareer] || `Great choice! Pursuing a path in ${topCareer} offers immense growth opportunities. Focus on practical projects and industry-relevant skills.`;
+
+    if (process.env.GEMINI_API_KEY && 
+        process.env.GEMINI_API_KEY !== 'your_gemini_key_here' && 
+        !process.env.GEMINI_API_KEY.includes('AIzaSyCVZdi7Roqv4m8v1yQKvrlv_aa_POHUL_g')) {
       try {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model: 'gemini-2.0-flash',
           contents: `A student's career quiz suggests they are best suited for: "${topCareer}". 
             Give a 2-sentence personalized insight about this career path for an Indian student, 
             mentioning relevant entrance exams or skills to focus on. Be encouraging and specific.`
         });
-        aiInsight = response.text || '';
+        if (response && response.text) {
+          aiInsight = response.text.trim();
+        }
       } catch (e) {
-        console.error("Gemini Error:", e);
-        aiInsight = '';
+        console.warn("Gemini Error in Quiz (using default insight):", e.message);
       }
     }
 
@@ -108,7 +121,9 @@ router.post('/submit', async (req, res) => {
       })),
       aiInsight,
     });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { 
+    res.status(500).json({ error: err.message }); 
+  }
 });
 
 module.exports = router;
