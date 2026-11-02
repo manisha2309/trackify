@@ -5,7 +5,7 @@ services:
       - "4000:4000"
     environment:
       - NODE_ENV=development
-      - JWT_SECRET=7f3d9a2b8e4c1f6d0a5b3e7c2f8d4a9b1e6c3f0d7a2b5e8c1f4d7a0b3e6c9f2
+      - JWT_SECRET=${JWT_SECRET}
       - AUTH_SERVICE_URL=http://auth-service:4001
       - CAREER_SERVICE_URL=http://career-service:4002
       - LEETCODE_SERVICE_URL=http://leetcode-service:4003
@@ -25,9 +25,9 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=4001
-      - MONGODB_URI=mongodb+srv://trackifyai:tania2006@cluster0.vbiaqpy.mongodb.net/nexpath-auth?retryWrites=true&w=majority&appName=Cluster0
-      - JWT_SECRET=7f3d9a2b8e4c1f6d0a5b3e7c2f8d4a9b1e6c3f0d7a2b5e8c1f4d7a0b3e6c9f2
-      - JWT_REFRESH_SECRET=9b2e5f8c1d4a7e0b3f6c9d2a5e8b1f4c7a0d3e6b9c2f5a8d1e4b7c0f3a6d9e2
+      - MONGODB_URI=mongodb+srv://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}/nexpath-auth?retryWrites=true&w=majority&appName=Cluster0
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - REDIS_URL=redis://redis:6379
     depends_on:
       - mongo
@@ -42,8 +42,8 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=4002
-      - MONGODB_URI=mongodb+srv://trackifyai:tania2006@cluster0.vbiaqpy.mongodb.net/nexpath-auth?retryWrites=true&w=majority&appName=Cluster0
-      - GEMINI_API_KEY=AIzaSyCVZdi7Roqv4m8v1yQKvrlv_aa_POHUL_g
+      - MONGODB_URI=mongodb+srv://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}/nexpath-auth?retryWrites=true&w=majority&appName=Cluster0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - REDIS_URL=redis://redis:6379
     depends_on:
       - mongo
@@ -58,7 +58,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=4003
-      - MONGODB_URI=mongodb+srv://trackifyai:tania2006@cluster0.vbiaqpy.mongodb.net/nexpath-leetcode?retryWrites=true&w=majority&appName=Cluster0
+      - MONGODB_URI=mongodb+srv://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}/nexpath-leetcode?retryWrites=true&w=majority&appName=Cluster0
       - REDIS_URL=redis://redis:6379
       - LEETCODE_GRAPHQL_URL=https://leetcode.com/graphql
     depends_on:
@@ -74,7 +74,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=4004
-      - MONGODB_URI=mongodb+srv://trackifyai:tania2006@cluster0.vbiaqpy.mongodb.net/nexpath-colleges?retryWrites=true&w=majority&appName=Cluster0
+      - MONGODB_URI=mongodb+srv://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}/nexpath-colleges?retryWrites=true&w=majority&appName=Cluster0
       - REDIS_URL=redis://redis:6379
     depends_on:
       - mongo
@@ -89,8 +89,8 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=4005
-      - MONGODB_URI=mongodb+srv://trackifyai:tania2006@cluster0.vbiaqpy.mongodb.net/nexpath-roadmaps?retryWrites=true&w=majority&appName=Cluster0
-      - GEMINI_API_KEY=AIzaSyCVZdi7Roqv4m8v1yQKvrlv_aa_POHUL_g
+      - MONGODB_URI=mongodb+srv://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}/nexpath-roadmaps?retryWrites=true&w=majority&appName=Cluster0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - mongo
     networks:
@@ -104,9 +104,9 @@ services:
       - NODE_ENV=development
       - PORT=4006
       - REDIS_URL=redis://redis:6379
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_USER=your@gmail.com
-      - SMTP_PASS=your_app_password
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_USER=${SMTP_USER:-your@gmail.com}
+      - SMTP_PASS=${SMTP_PASS:-your_app_password}
     depends_on:
       - redis
     networks:

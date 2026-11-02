@@ -2,8 +2,6 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import api from '../services/api'
 
-export default useAuthStore
-
 export const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -37,3 +35,5 @@ export const useAuthStore = create(
     { name: 'nexpath-auth', partialize: s => ({ user: s.user, accessToken: s.accessToken }) }
   )
 )
+
+export default useAuthStore
