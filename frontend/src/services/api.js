@@ -2,8 +2,7 @@ import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 
 const api = axios.create({
-  // Use the API URL from Vite env (Docker) or fallback to localhost:4000
-  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api`,
+  baseURL: import.meta.env.PROD ? '/api' : 'http://localhost:4000',
   withCredentials: true,
 })
 
@@ -11,6 +10,9 @@ const api = axios.create({
 api.interceptors.request.use(config => {
   const token = useAuthStore.getState().accessToken  // ✅ direct store read, no localStorage parsing
   if (token) config.headers.Authorization = `Bearer ${token}`
+  if (!import.meta.env.PROD && config.url && !config.url.startsWith('http') && !config.url.startsWith('/api')) {
+    config.url = `/api${config.url.startsWith('/') ? '' : '/'}${config.url}`
+  }
   return config
 })
 
@@ -22,8 +24,11 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && !original._retry) {
       original._retry = true
       try {
+        const refreshUrl = import.meta.env.PROD
+          ? '/api/auth/refresh'
+          : 'http://localhost:4000/api/auth/refresh'
         const { data } = await axios.post(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/auth/refresh`,
+          refreshUrl,
           {}, { withCredentials: true }
         )
         // Update token in Zustand store directly

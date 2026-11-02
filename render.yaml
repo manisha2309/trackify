@@ -1,0 +1,102 @@
+services:
+  - type: web
+    name: nexpath-gateway
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: services/api-gateway
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: AUTH_SERVICE_URL
+        sync: false
+      - key: CAREER_SERVICE_URL
+        sync: false
+      - key: LEETCODE_SERVICE_URL
+        sync: false
+      - key: COLLEGE_SERVICE_URL
+        sync: false
+      - key: ROADMAP_SERVICE_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+
+  - type: web
+    name: nexpath-auth
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: services/auth-service
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+
+  - type: web
+    name: nexpath-career
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: services/career-service
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: nexpath-leetcode
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: services/leetcode-service
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+
+  - type: web
+    name: nexpath-college
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: services/college-service
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+
+  - type: web
+    name: nexpath-roadmap
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: services/roadmap-service
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

@@ -100,10 +100,11 @@ const User = require('../models/User');
 const signAccess  = id => jwt.sign({ id }, process.env.JWT_SECRET,         { expiresIn: '15m' });
 const signRefresh = id => jwt.sign({ id }, process.env.JWT_REFRESH_SECRET,  { expiresIn: '7d'  });
 
+const isProd = process.env.NODE_ENV === 'production';
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
+  secure: isProd,
+  sameSite: isProd ? 'lax' : 'strict',
   maxAge: 7 * 24 * 3600 * 1000,
 };
 
