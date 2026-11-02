@@ -22,4 +22,22 @@ router.put('/me', protect, async (req, res) => {
   res.json(req.user.toPublic());
 });
 
+router.put('/me/quiz', protect, async (req, res) => {
+  try {
+    const { careerMatch, matchPercentage } = req.body;
+    if (typeof careerMatch !== 'string' || !careerMatch.trim() || careerMatch.length >= 80) {
+      return res.status(400).json({ error: 'careerMatch must be a non-empty string under 80 characters' });
+    }
+
+    req.user.careerMatch = careerMatch.trim();
+    req.user.careerMatchPct = typeof matchPercentage === 'number' ? matchPercentage : Number(matchPercentage) || 0;
+    req.user.quizCompleted = true;
+    await req.user.save();
+
+    res.json(req.user.toPublic());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

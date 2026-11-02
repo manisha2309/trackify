@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
   leetcodeUsername: { type: String, default: '' },
   quizCompleted: { type: Boolean, default: false },
   careerMatch:  { type: String, default: '' },
+  careerMatchPct: { type: Number, default: 0 },
   refreshTokens: [String],
 }, { timestamps: true });
 

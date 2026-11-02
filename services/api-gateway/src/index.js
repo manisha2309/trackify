@@ -115,6 +115,8 @@ app.use('/api/auth', proxy(SERVICES.auth, {
   proxyReqPathResolver: req => '/auth' + req.url
 }));
 
+app.use('/api/profile', verifyToken, proxy(SERVICES.auth, { proxyReqPathResolver: req => '/profile' + req.url }));
+
 app.use('/api/colleges', proxy(SERVICES.college, {
   parseReqBody: false,
   proxyReqPathResolver: req => '/colleges' + req.url

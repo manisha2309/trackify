@@ -33,7 +33,11 @@ export default function Dashboard() {
         </div>
         <div className="card p-6">
           <div className="text-xs text-muted uppercase tracking-wider font-semibold mb-2">Career Match</div>
-          <div className="font-display font-bold text-xl text-white">{user?.careerMatch || 'Not yet taken'}</div>
+          <div className="font-display font-bold text-xl text-white">
+            {user?.careerMatch
+              ? `${user.careerMatch}${user.careerMatchPct ? `, ${user.careerMatchPct}% match` : ''}`
+              : 'Not yet taken'}
+          </div>
           {!user?.careerMatch && <Link to="/quiz" className="text-cyan text-xs no-underline hover:underline mt-1 block">Take quiz →</Link>}
         </div>
         <div className="card p-6">

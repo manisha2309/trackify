@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import api from '../services/api'
 import toast from 'react-hot-toast'
+import { useAuthStore } from '../store/authStore'
 
 export default function Quiz() {
   const [current, setCurrent]   = useState(0)
@@ -18,7 +19,25 @@ export default function Quiz() {
 
   const submitMutation = useMutation({
     mutationFn: (ans) => api.post('/career/quiz/submit', { answers: ans }).then(r => r.data),
-    onSuccess: (result) => navigate('/quiz/result', { state: { result } }),
+    onSuccess: async (result) => {
+      const user = useAuthStore.getState().user
+      if (user) {
+        try {
+          await api.put('/profile/me/quiz', {
+            careerMatch: result.topCareer,
+            matchPercentage: result.matchPercentage,
+          })
+          useAuthStore.getState().updateUser({
+            careerMatch: result.topCareer,
+            careerMatchPct: result.matchPercentage,
+            quizCompleted: true,
+          })
+        } catch {
+          toast.error('Result not saved')
+        }
+      }
+      navigate('/quiz/result', { state: { result } })
+    },
     onError: (err) => toast.error(err?.response?.data?.error || 'Submission failed'),
   })
 
