@@ -1,6 +1,55 @@
 const router = require('express').Router();
 const { GoogleGenAI } = require('@google/genai');
 
+const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+const RETRYABLE_STATUSES = [503, 429, 404];
+
+function getErrorStatus(err) {
+  if (!err) return null;
+  if (typeof err.status === 'number') return err.status;
+  if (typeof err.statusCode === 'number') return err.statusCode;
+  if (typeof err.code === 'number') return err.code;
+  if (err.status && !isNaN(Number(err.status))) return Number(err.status);
+  if (err.response?.status) return Number(err.response.status);
+  try {
+    const parsed = typeof err.message === 'string' ? JSON.parse(err.message) : null;
+    if (parsed?.error?.code) return Number(parsed.error.code);
+  } catch {}
+  if (typeof err.message === 'string') {
+    if (err.message.includes('503')) return 503;
+    if (err.message.includes('429')) return 429;
+    if (err.message.includes('404')) return 404;
+  }
+  return null;
+}
+
+async function callGeminiWithFallback(ai, requestConfig) {
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 0; i < GEMINI_MODELS.length; i++) {
+      const model = GEMINI_MODELS[i];
+      try {
+        const response = await ai.models.generateContent({
+          ...requestConfig,
+          model,
+        });
+        return response;
+      } catch (err) {
+        const status = getErrorStatus(err);
+        if (!RETRYABLE_STATUSES.includes(status)) {
+          throw err;
+        }
+        if (i < GEMINI_MODELS.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+      }
+    }
+    if (pass === 0) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+  }
+  throw new Error('All Gemini attempts failed');
+}
+
 // Static quiz questions
 const QUESTIONS = [
   {
@@ -36,7 +85,7 @@ const QUESTIONS = [
   {
     id: 7,
     question: "How comfortable are you with mathematics?",
-    options: ["Love it — the more complex the better","Fine with basics, prefer visual stuff","Moderate — can handle statistics","I prefer words over numbers"],
+    options: ["Love it â€” the more complex the better","Fine with basics, prefer visual stuff","Moderate â€” can handle statistics","I prefer words over numbers"],
   },
   {
     id: 8,
@@ -102,9 +151,9 @@ const OPTION_POINTS = [
   ],
   // Q6: How comfortable are you with mathematics?
   [
-    { "Data Scientist": 3, "Research Scientist": 2 }, // 0: Love it — the more complex the better
+    { "Data Scientist": 3, "Research Scientist": 2 }, // 0: Love it â€” the more complex the better
     { "Graphic Designer": 3, "UI/UX Designer": 2 }, // 1: Fine with basics, prefer visual stuff
-    { "Business Analyst": 3, "Software Developer": 2, "Doctor / Medical": 1 }, // 2: Moderate — can handle statistics
+    { "Business Analyst": 3, "Software Developer": 2, "Doctor / Medical": 1 }, // 2: Moderate â€” can handle statistics
     { "Doctor / Medical": 3, "Product Manager": 1 } // 3: I prefer words over numbers
   ],
   // Q7: Where do you see yourself in 5 years?
@@ -127,7 +176,7 @@ for (const career of CAREERS) {
 // GET /quiz/questions
 router.get('/questions', (_, res) => res.json({ questions: QUESTIONS, total: QUESTIONS.length }));
 
-// POST /quiz/submit  — body: { answers: [0,1,2,...] }  (index of chosen option per question)
+// POST /quiz/submit  â€” body: { answers: [0,1,2,...] }  (index of chosen option per question)
 router.post('/submit', async (req, res) => {
   try {
     const { answers } = req.body;
@@ -155,18 +204,20 @@ router.post('/submit', async (req, res) => {
         !process.env.GEMINI_API_KEY.includes('AIzaSyCVZdi7Roqv4m8v1yQKvrlv_aa_POHUL_g')) {
       try {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const geminiPromise = ai.models.generateContent({
-          model: 'gemini-2.0-flash',
-          contents: `A student's career quiz suggests they are best suited for: "${topCareer}". 
-            Give a 2-sentence personalized insight about this career path for an Indian student, 
-            mentioning relevant entrance exams or skills to focus on. Be encouraging and specific.`
-        }).then(response => (response && response.text ? response.text.trim() : ""));
+        const contents = `A student's career quiz suggests they are best suited for: "${topCareer}". 
+          Give a 2-sentence personalized insight about this career path for an Indian student, 
+          mentioning relevant entrance exams or skills to focus on. Be encouraging and specific.`;
+
+        const geminiPromise = callGeminiWithFallback(ai, { contents });
 
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Gemini timeout')), 8000)
+          setTimeout(() => reject(new Error('Quiz Gemini timeout')), 8000)
         );
 
-        aiInsight = await Promise.race([geminiPromise, timeoutPromise]);
+        const response = await Promise.race([geminiPromise, timeoutPromise]);
+        if (response && response.text) {
+          aiInsight = response.text.trim();
+        }
       } catch (e) {
         console.warn("Gemini Error in Quiz (returning empty insight):", e.message);
         aiInsight = "";

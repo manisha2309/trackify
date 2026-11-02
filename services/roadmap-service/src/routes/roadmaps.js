@@ -1,8 +1,63 @@
 const router = require('express').Router();
 const { GoogleGenAI } = require('@google/genai');
+const mongoose = require('mongoose');
+const Roadmap = require('../models/Roadmap');
 
-// In-memory store (replace with MongoDB in production)
-const roadmaps = new Map();
+const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+const RETRYABLE_STATUSES = [503, 429, 404];
+
+function getErrorStatus(err) {
+  if (!err) return null;
+  if (typeof err.status === 'number') return err.status;
+  if (typeof err.statusCode === 'number') return err.statusCode;
+  if (typeof err.code === 'number') return err.code;
+  if (err.status && !isNaN(Number(err.status))) return Number(err.status);
+  if (err.response?.status) return Number(err.response.status);
+  try {
+    const parsed = typeof err.message === 'string' ? JSON.parse(err.message) : null;
+    if (parsed?.error?.code) return Number(parsed.error.code);
+  } catch {}
+  if (typeof err.message === 'string') {
+    if (err.message.includes('503')) return 503;
+    if (err.message.includes('429')) return 429;
+    if (err.message.includes('404')) return 404;
+  }
+  return null;
+}
+
+async function callGeminiWithFallback(ai, requestConfig) {
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 0; i < GEMINI_MODELS.length; i++) {
+      const model = GEMINI_MODELS[i];
+      try {
+        const response = await ai.models.generateContent({
+          ...requestConfig,
+          model,
+        });
+        return response;
+      } catch (err) {
+        const status = getErrorStatus(err);
+        if (!RETRYABLE_STATUSES.includes(status)) {
+          throw err;
+        }
+        if (i < GEMINI_MODELS.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+      }
+    }
+    if (pass === 0) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+  }
+  throw new Error('All Gemini attempts failed');
+}
+
+function formatRoadmap(doc) {
+  if (!doc) return null;
+  const obj = doc.toObject ? doc.toObject() : { ...doc };
+  obj.id = (obj._id || doc._id).toString();
+  return obj;
+}
 
 // Curated detailed roadmaps by career domain & level
 const CAREER_TEMPLATES = {
@@ -142,7 +197,7 @@ const CAREER_TEMPLATES = {
         title: 'Product Strategy & Market Discovery',
         duration: '2 months',
         steps: [
-          { title: 'Product Thinking & Frameworks', description: 'Jobs-to-be-done (JTBD), Product-Market Fit, SWOT analysis, competitive benchmarking.', resources: ['Inspired by Marty Cagan', 'Lenny’s Newsletter'], completed: false },
+          { title: 'Product Thinking & Frameworks', description: 'Jobs-to-be-done (JTBD), Product-Market Fit, SWOT analysis, competitive benchmarking.', resources: ['Inspired by Marty Cagan', 'Lennyâ€™s Newsletter'], completed: false },
           { title: 'Customer Discovery & Validation', description: 'User interviews, MVP definition, hypothesis testing, feature prioritization (RICE, Kano).', resources: ['The Lean Startup', 'Product School'], completed: false }
         ]
       },
@@ -221,10 +276,14 @@ function generateFallbackRoadmap(career, currentLevel) {
 // POST /roadmaps/generate
 router.post('/generate', async (req, res) => {
   try {
-    const { career, currentLevel = 'beginner', userId } = req.body;
+    const userId = req.headers['x-user-id'];
+    if (!userId) return res.status(401).json({ error: 'Unauthorized: missing x-user-id header' });
+
+    const { career, currentLevel = 'beginner' } = req.body;
     if (!career) return res.status(400).json({ error: 'career is required' });
 
     let roadmapData = null;
+    let aiGenerated = false;
 
     // Attempt generation with Gemini API if key is configured
     if (process.env.GEMINI_API_KEY && 
@@ -253,75 +312,146 @@ Return ONLY a JSON object with this exact structure (no markdown, no backticks):
 }`;
 
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.0-flash',
+        const geminiCall = callGeminiWithFallback(ai, {
           contents: prompt,
           config: {
             responseMimeType: 'application/json',
           }
         });
 
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Gemini call timed out after 25 seconds')), 25000)
+        );
+
+        const response = await Promise.race([geminiCall, timeoutPromise]);
+
         if (response && response.text) {
           const cleanedText = response.text.replace(/```json|```/g, '').trim();
           roadmapData = JSON.parse(cleanedText);
         }
+
+        if (roadmapData && roadmapData.phases && Array.isArray(roadmapData.phases)) {
+          aiGenerated = true;
+        } else {
+          roadmapData = null;
+        }
       } catch (geminiError) {
-        console.warn('Gemini API call failed, falling back to curated generator:', geminiError.message);
+        console.warn('Gemini generation failed, using static fallback:', geminiError.message);
         roadmapData = null;
+        aiGenerated = false;
       }
     }
 
-    // If Gemini failed or is not configured, generate fallback roadmap
+    // If Gemini was not configured or every attempt failed, use static fallback roadmap
     if (!roadmapData || !roadmapData.phases || !Array.isArray(roadmapData.phases)) {
       roadmapData = generateFallbackRoadmap(career, currentLevel);
+      aiGenerated = false;
     }
 
-    const id = `${userId || 'anon'}-${Date.now()}`;
-    const roadmap = { id, career, userId, createdAt: new Date(), progress: 0, ...roadmapData };
-    roadmaps.set(id, roadmap);
+    const roadmapDoc = await Roadmap.create({
+      userId,
+      career,
+      progress: 0,
+      title: roadmapData.title || `${career} Roadmap`,
+      description: roadmapData.description || '',
+      estimatedMonths: roadmapData.estimatedMonths || 12,
+      phases: roadmapData.phases || []
+    });
 
-    res.status(201).json(roadmap);
+    // Delete user's older roadmaps so each user keeps only their latest one
+    await Roadmap.deleteMany({ userId, _id: { $ne: roadmapDoc._id } });
+
+    const responseData = formatRoadmap(roadmapDoc);
+    responseData.aiGenerated = aiGenerated;
+
+    res.status(201).json(responseData);
   } catch (err) {
-    console.error('Error generating roadmap:', err.response?.data || err.message);
-    // Even in total catch block, return a valid roadmap
-    const fallback = generateFallbackRoadmap(req.body?.career || 'Software Developer', req.body?.currentLevel || 'beginner');
-    const id = `fallback-${Date.now()}`;
-    const roadmap = { id, career: req.body?.career || 'Software Developer', createdAt: new Date(), progress: 0, ...fallback };
-    res.status(201).json(roadmap);
+    console.error('Error generating roadmap:', err.message);
+    res.status(500).json({ error: err.message || 'Failed to generate roadmap' });
+  }
+});
+
+// GET /roadmaps/mine
+router.get('/mine', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'];
+    if (!userId) return res.status(401).json({ error: 'Unauthorized: missing x-user-id header' });
+
+    const latest = await Roadmap.findOne({ userId }).sort({ createdAt: -1 });
+    if (!latest) return res.status(404).json({ error: 'Roadmap not found' });
+    res.json(formatRoadmap(latest));
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to fetch roadmap' });
   }
 });
 
 // GET /roadmaps/:id
-router.get('/:id', (req, res) => {
-  const roadmap = roadmaps.get(req.params.id);
-  if (!roadmap) return res.status(404).json({ error: 'Roadmap not found' });
-  res.json(roadmap);
+router.get('/:id', async (req, res) => {
+  try {
+    let roadmap = null;
+    if (mongoose.isValidObjectId(req.params.id)) {
+      roadmap = await Roadmap.findById(req.params.id);
+    }
+    if (!roadmap) {
+      roadmap = await Roadmap.findOne({ _id: req.params.id }).catch(() => null);
+    }
+    if (!roadmap) return res.status(404).json({ error: 'Roadmap not found' });
+
+    const userId = req.headers['x-user-id'];
+    if (roadmap.userId !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    res.json(formatRoadmap(roadmap));
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to fetch roadmap' });
+  }
 });
 
 // GET /roadmaps/user/:userId
-router.get('/user/:userId', (req, res) => {
-  const userRoadmaps = [...roadmaps.values()].filter(r => r.userId === req.params.userId);
-  res.json({ roadmaps: userRoadmaps });
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const userRoadmaps = await Roadmap.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    res.json({ roadmaps: userRoadmaps.map(formatRoadmap) });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to fetch user roadmaps' });
+  }
 });
 
-// PATCH /roadmaps/:id/step  — mark a step complete
-router.patch('/:id/step', (req, res) => {
-  const roadmap = roadmaps.get(req.params.id);
-  if (!roadmap) return res.status(404).json({ error: 'Roadmap not found' });
+// PATCH /roadmaps/:id/step — mark a step complete
+router.patch('/:id/step', async (req, res) => {
+  try {
+    let roadmap = null;
+    if (mongoose.isValidObjectId(req.params.id)) {
+      roadmap = await Roadmap.findById(req.params.id);
+    }
+    if (!roadmap) {
+      roadmap = await Roadmap.findOne({ _id: req.params.id }).catch(() => null);
+    }
+    if (!roadmap) return res.status(404).json({ error: 'Roadmap not found' });
 
-  const { phaseIndex, stepIndex, completed } = req.body;
-  if (roadmap.phases && roadmap.phases[phaseIndex]?.steps?.[stepIndex]) {
-    roadmap.phases[phaseIndex].steps[stepIndex].completed = completed;
+    const userId = req.headers['x-user-id'];
+    if (roadmap.userId !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
 
-    // Recalculate progress
-    const allSteps = roadmap.phases.flatMap(p => p.steps || []);
-    roadmap.progress = allSteps.length > 0 
-      ? Math.round((allSteps.filter(s => s.completed).length / allSteps.length) * 100)
-      : 0;
+    const { phaseIndex, stepIndex, completed } = req.body;
+    if (roadmap.phases && roadmap.phases[phaseIndex]?.steps?.[stepIndex]) {
+      roadmap.phases[phaseIndex].steps[stepIndex].completed = completed;
 
-    roadmaps.set(req.params.id, roadmap);
+      // Recalculate progress
+      const allSteps = roadmap.phases.flatMap(p => p.steps || []);
+      roadmap.progress = allSteps.length > 0 
+        ? Math.round((allSteps.filter(s => s.completed).length / allSteps.length) * 100)
+        : 0;
+
+      roadmap.markModified('phases');
+      await roadmap.save();
+    }
+    res.json(formatRoadmap(roadmap));
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to update step' });
   }
-  res.json(roadmap);
 });
 
 module.exports = router;

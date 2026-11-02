@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import api from '../services/api'
 import toast from 'react-hot-toast'
@@ -7,6 +7,18 @@ export default function Roadmap() {
   const [career, setCareer]     = useState('')
   const [level, setLevel]       = useState('beginner')
   const [roadmap, setRoadmap]   = useState(null)
+
+  useEffect(() => {
+    api.get('/roadmap/mine')
+      .then(r => {
+        if (r.data) setRoadmap(r.data)
+      })
+      .catch(err => {
+        if (err?.response?.status !== 404) {
+          console.error('Failed to load roadmap:', err)
+        }
+      })
+  }, [])
 
   const generate = useMutation({
     mutationFn: () => api.post('/roadmap/generate', { career, currentLevel: level }).then(r => r.data),

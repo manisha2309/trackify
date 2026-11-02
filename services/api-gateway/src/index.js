@@ -139,7 +139,11 @@ app.use('/api/leetcode', verifyToken, proxy(SERVICES.leetcode, {
 
 app.use('/api/roadmap', verifyToken, proxy(SERVICES.roadmap, {
   //parseReqBody: false,
-  proxyReqPathResolver: req => '/roadmaps' + req.url
+  proxyReqPathResolver: req => '/roadmaps' + req.url,
+  proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+    proxyReqOpts.headers['x-user-id'] = srcReq.user.id;
+    return proxyReqOpts;
+  }
 }));
 
 app.use('/api/notify', verifyToken, proxy(SERVICES.notify, {
