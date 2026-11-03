@@ -63,18 +63,20 @@ export default function LeetCode() {
   // }
 
   const handleSync = async () => {
-  if (!inputVal.trim()) return
-  try {
-    setRefreshing(true)
-    setUsername(inputVal.trim())
-    await refetch()
-    toast.success('LeetCode stats synced!')
-  } catch {
-    toast.error('User not found on LeetCode')
-  } finally {
-    setRefreshing(false)
+    if (!inputVal.trim()) return
+    try {
+      setRefreshing(true)
+      const target = inputVal.trim()
+      setUsername(target)
+      await api.get(`/leetcode/${target}?refresh=true`)
+      await refetch()
+      toast.success('LeetCode stats synced!')
+    } catch {
+      toast.error('User not found on LeetCode')
+    } finally {
+      setRefreshing(false)
+    }
   }
-}
 
   const stats = data || {}
   const totalQuestions = (stats.totalEasy || 870) + (stats.totalMedium || 1800) + (stats.totalHard || 780)

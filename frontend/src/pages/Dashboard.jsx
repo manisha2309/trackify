@@ -6,7 +6,7 @@ const QUICK_LINKS = [
   { icon: '📊', label: 'LeetCode Tracker',   to: '/leetcode',    color: '#ffb020' },
   { icon: '🗺️', label: 'AI Roadmap',         to: '/roadmap',     color: '#10d87b' },
   { icon: '🏛️', label: 'College Finder',     to: '/colleges',    color: '#ff2d9f' },
-  { icon: '🌐', label: '3D Career Tree',      to: '/career-tree', color: '#7c3aed' },
+  { icon: '🌐', label: 'Career Tree',         to: '/career-tree', color: '#7c3aed' },
   { icon: '👤', label: 'My Profile',          to: '/profile',     color: '#7a8aa8' },
 ]
 
@@ -29,7 +29,6 @@ export default function Dashboard() {
         <div className="card p-6">
           <div className="text-xs text-muted uppercase tracking-wider font-semibold mb-2">Plan</div>
           <div className="font-display font-bold text-xl text-white capitalize">{user?.plan || 'free'}</div>
-          <Link to="/pricing" className="text-cyan text-xs no-underline hover:underline mt-1 block">Upgrade →</Link>
         </div>
         <div className="card p-6">
           <div className="text-xs text-muted uppercase tracking-wider font-semibold mb-2">Career Match</div>

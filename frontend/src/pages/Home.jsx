@@ -2,19 +2,19 @@ import { Link } from 'react-router-dom'
 import { useEffect, useRef } from 'react'
 
 const STATS = [
-  { num: '24K+', label: 'Students Guided' },
-  { num: '500+', label: 'Career Paths'    },
-  { num: '1200+', label: 'Colleges Listed' },
-  { num: '98%',  label: 'Match Accuracy'  },
+  { num: '8', label: 'Career Matches in Quiz' },
+  { num: 'AI', label: 'Generated Roadmaps'    },
+  { num: 'Live', label: 'Real LeetCode Stats' },
+  { num: 'Directory', label: 'University Search' },
 ]
 
 const FEATURES = [
-  { icon: '📊', title: 'LeetCode Auto-Sync', desc: 'Fetch your LeetCode stats automatically. Heatmaps, streaks, percentile rank — all live.', tag: '⚡ Innovative', col: 'span 2' },
-  { icon: '🎯', title: 'AI Career Quiz',     desc: '8-question adaptive quiz maps you to 500+ career paths with AI match scoring.',          tag: '🔥 Popular'   },
-  { icon: '🌐', title: '3D Career Tree',     desc: 'Explore career paths in interactive 3D space built with Three.js.',                       tag: '✨ New'        },
-  { icon: '🏛️', title: 'College Finder',    desc: '1200+ colleges with cutoffs, fees, and AI-powered recommendations.',                      tag: '✓ Live'       },
-  { icon: '🗺️', title: 'AI Roadmap',        desc: 'AI-generated step-by-step learning plans personalized to your career goals.',             tag: '✓ Live'       },
-  { icon: '🌏', title: 'Multi-Language',    desc: 'Full platform in Hindi, Kannada, Tamil, Telugu & more via LibreTranslate.',               tag: '🇮🇳 India First' },
+  { icon: '📊', title: 'LeetCode Auto-Sync', desc: 'Real LeetCode stats synced live. Heatmaps, streaks, ranking, and recent submissions.', tag: '⚡ Live Sync', col: 'span 2' },
+  { icon: '🎯', title: 'AI Career Quiz',     desc: '8-question quiz evaluates your strengths across 8 career matches in the quiz with AI match scoring.', tag: '🔥 Popular' },
+  { icon: '🌐', title: 'Career Tree',        desc: 'Explore career paths in interactive space built with Three.js.',                       tag: '✨ New'        },
+  { icon: '🏛️', title: 'College Finder',    desc: 'University directory search across colleges with real-time domains and information.',  tag: '✓ Live'       },
+  { icon: '🗺️', title: 'AI Roadmap',        desc: 'AI-generated roadmaps with step-by-step learning plans personalized to your career goals.', tag: '✓ Live' },
+  { icon: '📄', title: 'Resume Analyzer',    desc: 'Privacy-friendly resume analyzer running entirely in your browser with instant ATS tips.', tag: '🔒 100% Private' },
 ]
 
 export default function Home() {

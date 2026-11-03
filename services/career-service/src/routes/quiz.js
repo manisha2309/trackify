@@ -200,8 +200,7 @@ router.post('/submit', async (req, res) => {
     let aiInsight = "";
 
     if (process.env.GEMINI_API_KEY && 
-        process.env.GEMINI_API_KEY !== 'your_gemini_key_here' && 
-        !process.env.GEMINI_API_KEY.includes('AIzaSyCVZdi7Roqv4m8v1yQKvrlv_aa_POHUL_g')) {
+        process.env.GEMINI_API_KEY !== 'your_gemini_key_here') {
       try {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const contents = `A student's career quiz suggests they are best suited for: "${topCareer}". 

@@ -274,7 +274,7 @@ export default function CareerTree() {
             fontSize: 20, boxShadow: "0 0 20px rgba(124,58,237,0.4)"
           }}>🌐</div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>3D Career Tree</div>
+            <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>Career Tree</div>
             <div style={{ fontSize: 12, color: "#64748b" }}>Interactive career path explorer</div>
           </div>
         </div>

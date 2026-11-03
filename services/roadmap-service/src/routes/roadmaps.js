@@ -287,8 +287,7 @@ router.post('/generate', async (req, res) => {
 
     // Attempt generation with Gemini API if key is configured
     if (process.env.GEMINI_API_KEY && 
-        process.env.GEMINI_API_KEY !== 'your_gemini_key_here' && 
-        !process.env.GEMINI_API_KEY.includes('AIzaSyCVZdi7Roqv4m8v1yQKvrlv_aa_POHUL_g')) {
+        process.env.GEMINI_API_KEY !== 'your_gemini_key_here') {
       try {
         const prompt = `Create a detailed learning roadmap for someone who wants to become a "${career}".
 Current level: ${currentLevel}.

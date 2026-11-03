@@ -35,7 +35,7 @@ export default function Navbar() {
                 ['🎯 Career Quiz',      '/quiz'],
                 ['📊 LeetCode Tracker', '/leetcode'],
                 ['🗺️ AI Roadmap',       '/roadmap'],
-                ['🌐 3D Career Tree',   '/career-tree'],
+                ['🌐 Career Tree',      '/career-tree'],
               ].map(([label, path]) => (
                 <Link key={path} to={path} className="px-3 py-2 rounded-lg hover:bg-surface2 text-sm text-muted hover:text-white no-underline transition-colors">
                   {label}

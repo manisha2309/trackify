@@ -6,7 +6,7 @@
     "careerQuiz": "Career Quiz",
     "leetcodeTracker": "LeetCode Tracker",
     "aiRoadmap": "AI Roadmap",
-    "careerTree": "3D Career Tree"
+    "careerTree": "Career Tree"
   },
   "home": {
     "welcome": "Discover Your",
@@ -24,7 +24,7 @@
     "features": {
       "leetcodeAutoSync": "LeetCode Auto-Sync",
       "aiCareerQuiz": "AI Career Quiz",
-      "careerTree3D": "3D Career Tree",
+      "careerTree3D": "Career Tree",
       "collegeFinder": "College Finder",
       "aiRoadmap": "AI Roadmap",
       "multiLanguage": "Multi-Language"
